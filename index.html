@@ -629,6 +629,23 @@ async function printBill() {
           .prov-tbl { table-layout:fixed !important; width:100% !important; }
         `;
         doc.head.appendChild(st);
+        // Proper underlines: real borders, same thickness, tight under the text
+        const ul = (el) => {
+          if (!el) return;
+          el.style.textDecoration = 'none';
+          el.style.display = 'inline-block';
+          el.style.borderBottom = '1.5px solid #000';
+          el.style.paddingBottom = '2px';
+          el.style.lineHeight = '1.2';
+        };
+        const tc = doc.querySelector('.title-center');
+        if (tc) {
+          tc.style.textDecoration = 'none';
+          tc.innerHTML = '<span>QUOTATION / ORDER FORM</span>';
+          ul(tc.firstChild);
+        }
+        ul(doc.querySelector('.bank-details > div:first-child'));
+        ul(doc.querySelector('.labour-notice > div:first-child'));
         // Mail: label and addresses aligned at the top
         const mail = doc.querySelector('.mail-col');
         if (mail) {
@@ -678,6 +695,7 @@ async function printBill() {
             d.style.lineHeight = o.lh;
             d.style.height = 'auto';
             d.style.display = 'block';
+            d.style.color = '#000';
           } else {
             const hasLine = el.classList.contains('date-inp') || el.classList.contains('extra-amt-inp') || el.classList.contains('c-inp');
             d.textContent = el.value;
@@ -690,7 +708,10 @@ async function printBill() {
             d.style.overflow = 'hidden';
             d.style.padding = '0 ' + (parseFloat(o.pad.split(' ')[1]) || 2) + 'px';
             d.style.lineHeight = '1';
-            if (hasLine) d.style.borderBottom = '1px solid #999';
+            d.style.color = '#000';
+            d.style.fontWeight = 'bold';
+            d.style.fontSize = '13px';
+            if (hasLine) d.style.borderBottom = '1px solid #333';
             d.style.flex = '0 1 auto'; d.style.minWidth = '0';
           }
           el.parentNode.replaceChild(d, el);
