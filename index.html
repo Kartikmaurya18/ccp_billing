@@ -625,8 +625,33 @@ async function printBill() {
           .bank-details, .labour-notice { border-radius:5px !important; }
           .bank-details { margin:16px 0 10px 0 !important; padding:10px 14px !important; }
           .labour-notice { padding:8px 14px !important; }
+          .date-right { display:flex !important; align-items:center !important; justify-content:flex-end !important; gap:5px !important; }
+          .prov-tbl { table-layout:fixed !important; width:100% !important; }
         `;
         doc.head.appendChild(st);
+        // Mail: label and addresses aligned at the top
+        const mail = doc.querySelector('.mail-col');
+        if (mail) {
+          mail.style.cssText = 'display:flex;justify-content:flex-end;align-items:flex-start;gap:8px;line-height:1.6;';
+          mail.innerHTML = '<span style="font-weight:bold;">Mail:</span><div style="text-align:right;font-weight:bold;">pravinbaldha79@gmail.com<br>chanakyacp21@gmail.com</div>';
+        }
+        // Product details: labels and values on one baseline, values in a neat column
+        const prod = doc.querySelector('.product-sec');
+        if (prod) {
+          const rows = [
+            ['Product :-', 'Panel size = 2100 mm x 300 mm x 50 mm', 0],
+            ['', 'Column size = 150 mm x 150 mm', 0],
+            ['Compound wall :-', 'Option for Height \u00a0 6\u201900 \u00a0 to \u00a0 10\u201900', 1],
+            ['Garden Curving :-', 'Height 2\u201900 with Semi Circular Shape Design.', 1],
+            ['Fitting :-', 'Chanakya \u00a0 Precast will take care of all necessary steps to effect the structure', 1]
+          ];
+          prod.style.lineHeight = '1.4';
+          prod.innerHTML = rows.map(r =>
+            '<div style="display:flex;align-items:baseline;margin-bottom:' + (r[2] ? '10px' : '5px') + ';">' +
+            '<span style="width:128px;flex:0 0 128px;font-weight:bold;">' + r[0] + '</span>' +
+            '<span style="font-weight:bold;">' + r[1] + '</span></div>'
+          ).join('');
+        }
         const sig = doc.createElement('div');
         sig.style.cssText = 'display:flex;justify-content:flex-end;margin-top:34px;padding-right:10px;';
         sig.innerHTML = '<div style="text-align:center;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;"><div style="margin-bottom:34px;">For CHANAKYA CEMENT PRODUCTS</div><div style="border-top:1.5px solid #000;padding-top:4px;min-width:190px;">Authorised Signature</div></div>';
@@ -648,7 +673,7 @@ async function printBill() {
           if (el.tagName === 'TEXTAREA') {
             d.textContent = el.value;
             d.style.whiteSpace = 'pre-wrap';
-            d.style.width = o.w + 'px';
+            d.style.width = '100%';
             d.style.padding = o.pad;
             d.style.lineHeight = o.lh;
             d.style.height = 'auto';
