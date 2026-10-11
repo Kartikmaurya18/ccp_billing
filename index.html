@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chanakya Cement Products — Bill Generator</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── SCREEN STYLES ── */
+body {
+  font-family: Arial, sans-serif;
+  background: #b0b0b0;
+  padding: 24px 16px;
+  min-height: 100vh;
+}
+
+.toolbar {
+  max-width: 740px;
+  margin: 0 auto 14px auto;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.toolbar h1 { width:100%; text-align:center; font-size:16px; color:#111; margin-bottom:3px; }
+.btn { padding:9px 22px; font-size:13px; font-weight:bold; border:none; border-radius:5px; cursor:pointer; }
+.btn:hover { opacity:.82; }
+.btn-pdf   { background:#c0392b; color:#fff; }
+.btn-print { background:#2471a3; color:#fff; }
+.btn-save-fmt { background:#8e44ad; color:#fff; }
+
+#bill {
+  background: #fff;
+  width: 740px;
+  margin: 0 auto;
+  padding: 14px 22px 26px 22px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+}
+
+/* ── PRINT STYLES — A4 mein perfect fit ── */
+@media print {
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  html, body { margin:0; padding:0; background:#fff; }
+  .toolbar { display:none !important; }
+  .no-print { display:none !important; }
+
+  @page {
+    size: A4 portrait;
+    margin: 5mm 10mm 5mm 10mm;
+  }
+
+  #bill {
+    width: 100%;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+    font-size: 11pt;
+  }
+
+  input, textarea {
+    border: none !important;
+    border-bottom: 1px solid #999 !important;
+    outline: none !important;
+    background: transparent !important;
+    -webkit-appearance: none;
+  }
+  textarea { resize: none !important; }
+}
+
+/* ── BILL CONTENT STYLES ── */
+.row-gst {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 5px;
+  position: relative;
+}
+.gst-text   { font-weight:bold; font-size:11.5px; }
+.shree-text {
+  font-weight:bold;
+  font-size:12px;
+  color:#FF0000;
+  letter-spacing:.4px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.header-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+.logo-img { width:70px; height:70px; object-fit:contain; flex-shrink:0; }
+.company-name {
+  font-family: "Arial Rounded MT Bold","Arial Black",Arial,sans-serif;
+  font-weight: 900;
+  font-size: 32px;
+  color: #000;
+  text-transform: uppercase;
+  white-space: nowrap;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.addr-bar {
+  border-top: 2.5px solid #000;
+  border-bottom: 1.5px solid #000;
+  padding: 4px 6px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 11.5px;
+  color: #0000FF;
+  line-height: 1.4;
+  margin-top: 3px;
+}
+
+.contact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 18px 5px 18px;
+}
+.contact-left  { display:flex; align-items:center; gap:10px; }
+.contact-lbl   { font-weight:bold; font-size:13px; }
+.nums-col      { display:flex; flex-direction:column; gap:2px; }
+.num-line      { display:flex; align-items:center; gap:4px; font-weight:bold; font-size:12px; }
+.wa-icon       { width:16px; height:16px; }
+.mail-col      { text-align:right; font-weight:bold; font-size:12px; line-height:1.6; }
+
+.div-thick { border:none; border-top:2.5px solid #000; margin:0; }
+.div-thin  { border:none; border-top:1px solid #000; margin:4px 0; }
+
+.title-row {
+  display: flex;
+  align-items: center;
+  padding: 5px 0 3px 0;
+}
+.title-center {
+  flex: 1;
+  text-align: center;
+  font-weight: bold;
+  font-size: 15px;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.date-right {
+  min-width: 175px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.date-inp {
+  border:none;
+  border-bottom:1.5px solid #000;
+  outline:none;
+  font-size:12px;
+  font-family:Arial,sans-serif;
+  width:105px;
+  text-align:center;
+  padding:1px 2px;
+  background:transparent;
+}
+
+.client-sec { margin:7px 0 6px 0; }
+.name-row     { display:flex; align-items:center; gap:7px; margin-bottom:7px; }
+.num-addr-row { display:flex; align-items:center; gap:8px; }
+.f-lbl { font-weight:900; font-size:14px; white-space:nowrap; }
+.c-inp {
+  border:1px solid #666;
+  outline:none;
+  font-size:12px;
+  font-family:Arial,sans-serif;
+  padding:3px 7px;
+  background:#fff;
+}
+.inp-name { flex:1; }
+.inp-num  { width:150px; }
+.inp-addr { flex:1; }
+
+/* Labour charge notice */
+.labour-notice {
+  font-weight: bold;
+  font-size: 12px;
+  color: #000;
+  margin: 6px 0 2px 0;
+  padding: 6px 10px;
+  border: 1.5px solid #000;
+  border-radius: 3px;
+  background: #f9f9f9;
+}
+.note-textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  background: transparent;
+  resize: none;
+  min-height: 80px;
+  line-height: 1.75;
+  padding: 2px 0;
+  overflow: hidden;
+  display: block;
+  color: #000;
+  font-weight: normal;
+}
+@media print {
+  .labour-notice { background: #f9f9f9 !important; border-color: #000 !important; }
+  .note-textarea { resize: none !important; }
+  /* ── Force single page ── */
+  * { page-break-inside: avoid; }
+  #bill { page-break-after: avoid; }
+}
+
+/* Bank Details */
+.bank-details {
+  font-size: 12px;
+  color: #000;
+  margin: 15px 0 10px 0;
+  padding: 8px 12px;
+  border: 1.5px solid #000;
+  border-radius: 3px;
+  background: #f9f9f9;
+}
+@media print {
+  .bank-details { background: #f9f9f9 !important; border-color: #000 !important; }
+}
+
+/* Extra notes textbox */
+.extra-notes-wrap { margin: 4px 0 6px 0; }
+.extra-notes {
+  width: 100%;
+  border: 1px dashed #999;
+  outline: none;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  padding: 4px 8px;
+  background: #fafafa;
+  resize: vertical;
+  color: #333;
+  min-height: 32px;
+}
+@media print {
+  .extra-notes { border: none !important; border-bottom: 1px solid #ccc !important; background: transparent !important; }
+}
+
+.product-sec {
+  margin: 7px 0 2px 0;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.indent2   { margin-left:74px; }
+.extra-line { font-weight:bold; font-size:12px; margin:3px 0 8px 28px; display:flex; align-items:center; gap:6px; }
+.extra-amt-inp {
+  border: none;
+  border-bottom: 1.5px solid #000;
+  outline: none;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  width: 55px;
+  text-align: center;
+  font-weight: bold;
+  background: transparent;
+  padding: 0 2px;
+}
+
+.bill-tbl { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:4px; }
+.bill-tbl th {
+  border:1.5px solid #000;
+  padding:5px 9px;
+  font-weight:bold;
+  text-decoration:underline;
+  text-align:left;
+  background:#fff;
+}
+.bill-tbl td { border:1.5px solid #000; padding:5px 9px; }
+.bill-tbl tfoot td { background:#f2f2f2; }
+.td-amt       { text-align:center; }
+.td-glbl      { text-align:right; font-weight:bold; }
+.td-total-lbl { text-align:right; font-weight:bold; text-decoration:underline; }
+.td-total-val { text-align:center; font-weight:bold; font-size:13px; }
+.t-inp { border:none; outline:none; font-size:12px; font-family:Arial,sans-serif; width:100%; background:transparent; }
+
+.add-row-wrap { text-align:right; margin-bottom:9px; }
+.btn-add {
+  background:#27ae60; color:#fff; font-size:11.5px;
+  padding:5px 13px; border-radius:4px; border:none; cursor:pointer;
+}
+
+/* Provide table — editable */
+.prov-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.prov-tbl th {
+  border:1.5px solid #000;
+  background:#C5B99A;
+  text-align:center;
+  padding:6px 10px;
+  font-weight:bold;
+  width:50%;
+}
+.prov-tbl td {
+  border:1.5px solid #000;
+  padding:4px 8px;
+  vertical-align:top;
+  width:50%;
+}
+.prov-textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
+  background: transparent;
+  resize: none;
+  min-height: 90px;
+  line-height: 1.85;
+  padding: 2px 4px;
+  overflow: hidden;
+  display: block;
+}
+@media print {
+  .prov-textarea { resize: none !important; }
+}
+
+/* ── PDF CAPTURE MODE (same look as print) ── */
+body.pdf-mode { padding:0; background:#fff; }
+body.pdf-mode .toolbar, body.pdf-mode .no-print { display:none !important; }
+body.pdf-mode #bill { box-shadow:none; }
+body.pdf-mode input, body.pdf-mode textarea {
+  border:none !important; border-bottom:1px solid #999 !important; background:transparent !important;
+}
+body.pdf-mode input::placeholder, body.pdf-mode textarea::placeholder { color:transparent; }
+body.pdf-mode .t-inp, body.pdf-mode .extra-amt-inp { border-bottom:none !important; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>📄 Chanakya Cement Products — Bill Generator</h1>
+  <button class="btn btn-pdf" onclick="printBill()">⬇ PDF Save / Print</button>
+  <button class="btn btn-save-fmt" onclick="saveFormat()">💾 Save Format</button>
+  <label class="btn" style="background:#f1c40f; color:#000; display:flex; align-items:center; gap:8px; user-select:none; cursor:pointer;">
+    <input type="checkbox" id="gstToggle" checked onchange="calc()" style="cursor:pointer; width:16px; height:16px;"/> GST (18%)
+  </label>
+</div>
+
+<div id="bill">
+
+  <div class="row-gst">
+    <span class="gst-text">GST No. 09AIFPB5742D1ZL</span>
+    <span class="shree-text">Shree &nbsp; Ganeshay &nbsp; Namahh…</span>
+  </div>
+
+  <div class="header-block">
+    <!-- LOGO: put your logo file named logo.png in the same folder as this file -->
+    <img class="logo-img" src="ccpimage.png" alt="CCP"/>
+    <div class="company-name">CHANAKYA CEMENT PRODUCTS</div>
+  </div>
+
+  <div class="addr-bar">
+    Mfg- Address: &nbsp;&nbsp; Rupapur , khochawa ,G T Road B/h Vidhan Basera &nbsp;&nbsp; Dhaba &amp; Petrol Pump Varanasi(221313)
+  </div>
+
+  <div class="contact-row">
+    <div class="contact-left">
+      <span class="contact-lbl">Contact:</span>
+      <div class="nums-col">
+        <div class="num-line">
+          <!-- WhatsApp icon + link for 91515 77755 -->
+          <a href="https://wa.me/919151577755" target="_blank" style="display:flex;align-items:center;gap:4px;text-decoration:none;color:inherit;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="16" height="16"><path fill="#25D366" d="M16 0C7.163 0 0 7.163 0 16c0 2.822.736 5.476 2.027 7.782L0 32l8.418-2.007A15.93 15.93 0 0016 32c8.837 0 16-7.163 16-16S24.837 0 16 0z"/><path fill="#fff" d="M23.507 19.698c-.347-.174-2.057-1.015-2.377-1.131-.319-.116-.552-.174-.784.174-.232.347-.9 1.131-1.103 1.364-.203.232-.406.261-.753.087-.347-.174-1.465-.54-2.789-1.72-1.031-.919-1.727-2.054-1.93-2.401-.203-.347-.022-.535.152-.708.156-.155.347-.406.521-.609.174-.203.232-.347.347-.58.116-.232.058-.435-.029-.609-.087-.174-.784-1.89-1.074-2.589-.283-.68-.571-.588-.784-.598-.203-.009-.435-.011-.667-.011-.232 0-.609.087-.928.435-.319.347-1.218 1.191-1.218 2.904 0 1.713 1.247 3.368 1.42 3.6.174.232 2.454 3.747 5.946 5.255.831.359 1.48.573 1.986.733.834.265 1.594.228 2.194.138.669-.1 2.057-.841 2.348-1.654.29-.812.29-1.509.203-1.654-.087-.145-.319-.232-.667-.406z"/></svg>
+            91515 77755
+          </a>
+        </div>
+        <div class="num-line">
+          <span style="font-size:14px;">📞</span> 83830 48884
+        </div>
+      </div>
+    </div>
+    <div class="mail-col">
+      <b>Mail:</b> &nbsp; pravinbaldha79@gmail.com<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; chanakyacp21@gmail.com
+    </div>
+  </div>
+
+  <hr class="div-thick"/>
+
+  <div class="title-row">
+    <div style="min-width:175px;"></div>
+    <div class="title-center">QUOTATION / ORDER FORM</div>
+    <div class="date-right">Date &ndash;&nbsp;<input class="date-inp" id="dateField" type="text" placeholder="DD/MM/YYYY"/></div>
+  </div>
+
+  <hr class="div-thin"/>
+
+  <div class="client-sec">
+    <div class="name-row">
+      <span class="f-lbl">Name &nbsp; :-</span>
+      <input class="c-inp inp-name" id="cName" type="text" placeholder="Client ka naam"/>
+    </div>
+    <div class="num-addr-row">
+      <span class="f-lbl">Number :-</span>
+      <input class="c-inp inp-num"  id="cNum"  type="text" placeholder="Mobile number"/>
+      <span class="f-lbl" style="margin-left:22px;">Address :-</span>
+      <input class="c-inp inp-addr" id="cAddr" type="text" placeholder="Shehar / Pata"/>
+    </div>
+  </div>
+
+  <hr class="div-thin"/>
+
+  <div class="product-sec" style="margin-top:5px;">
+    <div><b>Product :-</b> &nbsp; Panel size = 2100 mm x 300 mm x 50 mm</div>
+    <div class="indent2">Column size = 150 mm x 150 mm</div>
+    <br>
+    <div><b>Compound wall :-</b> &nbsp; Option for Height &nbsp; 6&rsquo;00 &nbsp; to &nbsp; 10&rsquo;00</div>
+    <br>
+    <div><b>Garden Curving :-</b> &nbsp; Height 2&rsquo;00 with Semi Circular Shape Design.</div>
+    <br>
+    <div><b>Fitting :-</b> &nbsp; Chanakya &nbsp; Precast will take care of all necessary steps to effect the structure</div>
+  </div>
+
+  <div class="extra-line">
+    &#x2192; &nbsp;&nbsp; Extra column &#x20B9;
+    <input class="extra-amt-inp" id="extraColAmt" type="number" value="220" min="0"/> per feet
+  </div>
+
+  <table class="bill-tbl" id="billTable">
+    <thead>
+      <tr>
+        <th style="width:22%">Quantity</th>
+        <th style="width:16%">Height</th>
+        <th style="width:32%">Rate(Per Rft.)</th>
+        <th class="td-amt" style="width:30%">Amount</th>
+      </tr>
+    </thead>
+    <tbody id="billRows">
+      <tr>
+        <td><input class="t-inp" oninput="calc()" placeholder="e.g. 200"/></td>
+        <td><input class="t-inp" oninput="calc()" placeholder="e.g. 10"/></td>
+        <td><input class="t-inp" oninput="calc()" placeholder="e.g. 125"/></td>
+        <td class="td-amt"><span id="r0">0</span></td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr id="gstRow">
+        <td colspan="2" style="border:1.5px solid #000;"></td>
+        <td class="td-glbl">GST(18%)</td>
+        <td class="td-amt" id="gstCell">0</td>
+      </tr>
+      <tr>
+        <td colspan="2" style="border:1.5px solid #000;"></td>
+        <td class="td-total-lbl">Total paid</td>
+        <td class="td-total-val" id="totalCell">&#x20B9; &nbsp; 0</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="add-row-wrap no-print">
+    <button class="btn-add" id="addBtn" onclick="addRow()">+ Nayi Row Jodo</button>
+  </div>
+
+  <!-- Provide table — EDITABLE -->
+  <table class="prov-tbl">
+    <thead>
+      <tr><th>Company Provide</th><th>Party Provide</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <textarea class="prov-textarea" id="companyProvide">→ Loading
+→ Unloading
+→ Transport Charges
+→ Labour Fitting
+→ Labour Cost
+→ Pit (2 feet)</textarea>
+        </td>
+        <td>
+          <textarea class="prov-textarea" id="partyProvide">→ sand
+→ water
+→ cement
+→ greet
+→ Rubble</textarea>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Bank Details -->
+  <div class="bank-details">
+    <div style="font-weight: bold; text-decoration: underline; margin-bottom: 6px;">Bank Details:</div>
+    <div style="display: flex; margin-bottom: 4px;">
+      <div style="width: 100px; font-weight: bold;">Bank Name</div>
+      <div>:- Union Bank of India</div>
+    </div>
+    <div style="display: flex; margin-bottom: 4px;">
+      <div style="width: 100px; font-weight: bold;">Acc No</div>
+      <div>:- 721401010050203</div>
+    </div>
+    <div style="display: flex;">
+      <div style="width: 100px; font-weight: bold;">IFS Code</div>
+      <div>:- UBIN0572144</div>
+    </div>
+  </div>
+
+  <!-- Labour charge notice — EDITABLE -->
+  <div class="labour-notice" style="margin-top: 15px;">
+    <div style="text-decoration: underline; margin-bottom: 5px; font-weight: bold;">Note:-</div>
+    <textarea class="note-textarea" id="noteText">1. This rate is completely with fitting and transportation.
+2. Proposed site should be cleaned.
+3. During the foundation/fitting, water, sand, cement, grit and quarry will be supplied by the customer at the site.
+4. Other taxes GST 18% extra.
+5. Payment is to be made in advance.</textarea>
+  </div>
+  <!-- Extra notes textbox (hidden) -->
+  <div class="extra-notes-wrap" style="display: none;">
+    <textarea class="extra-notes" id="extraNotes" placeholder="Additional notes / kuch aur likhna ho toh yahan likhein…" rows="2"></textarea>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+let ri = 1;
+
+/* ── Auto-fill today's date ── */
+(function(){
+  const today = new Date();
+  const dd = String(today.getDate()).padStart(2,'0');
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const yyyy = today.getFullYear();
+  document.getElementById('dateField').value = dd + '/' + mm + '/' + yyyy;
+})();
+
+/* ── Calc ── */
+function calc() {
+  let sub = 0;
+  document.querySelectorAll('#billRows tr').forEach(tr => {
+    const inp = tr.querySelectorAll('input');
+    const a = (parseFloat(inp[0].value)||0) * (parseFloat(inp[1].value)||0) * (parseFloat(inp[2].value)||0);
+    sub += a;
+    const sp = tr.querySelector('span[id^="r"]');
+    if (sp) sp.textContent = a ? a.toLocaleString('en-IN') : '0';
+  });
+  
+  const gstToggle = document.getElementById('gstToggle');
+  const gstRow = document.getElementById('gstRow');
+  let gst = 0;
+  
+  if (gstToggle && gstToggle.checked) {
+    gst = Math.round(sub * 0.18);
+    if (gstRow) gstRow.style.display = '';
+  } else {
+    if (gstRow) gstRow.style.display = 'none';
+  }
+  
+  const tot = sub + gst;
+  document.getElementById('gstCell').textContent = gst ? gst.toLocaleString('en-IN') : '0';
+  document.getElementById('totalCell').innerHTML = '&#x20B9; &nbsp; ' + (tot ? tot.toLocaleString('en-IN') : '0');
+}
+
+/* ── Add Row ── */
+function addRow() {
+  const id = 'r' + ri++;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input class="t-inp" oninput="calc()"/></td>
+    <td><input class="t-inp" oninput="calc()"/></td>
+    <td><input class="t-inp" oninput="calc()"/></td>
+    <td class="td-amt"><span id="${id}">0</span></td>`;
+  document.getElementById('billRows').appendChild(tr);
+}
+
+/* ── Print / PDF ── */
+async function printBill() {
+  const btn = document.querySelector('.btn-pdf');
+  const oldTxt = btn.textContent;
+  btn.textContent = '⏳ Preparing PDF...';
+  btn.disabled = true;
+  document.body.classList.add('pdf-mode');
+  try {
+    adjustAllTextareas();
+    const bill = document.getElementById('bill');
+    // measure real inputs/textareas, so the PDF copy can swap them for plain text
+    const origFields = Array.from(bill.querySelectorAll('input, textarea')).map(el => {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return { w: r.width, h: r.height, font: cs.font, fs: cs.fontSize, ff: cs.fontFamily, fw: cs.fontWeight,
+               ta: cs.textAlign, pad: cs.padding, lh: cs.lineHeight, bb: cs.borderBottomWidth + ' ' + cs.borderBottomStyle + ' ' + cs.borderBottomColor };
+    });
+    const canvas = await html2canvas(bill, {
+      scale: 3, backgroundColor: '#ffffff', useCORS: true,
+      onclone: (doc) => {
+        const st = doc.createElement('style');
+        st.textContent = `
+          #bill { padding-top:20px !important; padding-bottom:30px !important; }
+          .gst-text { font-size:12px !important; }
+          .shree-text { font-size:13px !important; }
+          .company-name { letter-spacing:1.5px !important; }
+          .logo-img { width:76px !important; height:76px !important; }
+          .addr-bar { background:#f4f1ea !important; padding:7px 8px !important; }
+          .contact-row { padding:10px 18px 9px 18px !important; }
+          .title-row { padding:8px 0 6px 0 !important; }
+          .title-center { font-size:17px !important; letter-spacing:.8px !important; }
+          .client-sec { margin:10px 0 8px 0 !important; }
+          .name-row { margin-bottom:10px !important; }
+          .product-sec { line-height:1.5 !important; margin-top:8px !important; }
+          .product-sec br { display:none !important; }
+          .product-sec > div { margin-bottom:9px !important; }
+          .extra-line { margin:4px 0 12px 28px !important; }
+          .bill-tbl { margin-top:4px !important; }
+          .bill-tbl th { background:#C5B99A !important; text-decoration:none !important; padding:9px 10px !important; font-size:12.5px !important; }
+          .bill-tbl td { padding:10px 10px !important; }
+          .bill-tbl tfoot td { background:#f2f2f2 !important; }
+          .td-total-lbl { text-decoration:none !important; font-size:13px !important; }
+          .bill-tbl tfoot tr:last-child td { background:#e7e0cc !important; }
+          .td-total-val { font-size:16px !important; }
+          .prov-tbl { margin-top:12px !important; }
+          .prov-tbl th { padding:9px 10px !important; font-size:12.5px !important; }
+          .prov-tbl td { padding:8px 12px !important; }
+          .bank-details, .labour-notice { border-radius:5px !important; }
+          .bank-details { margin:16px 0 10px 0 !important; padding:10px 14px !important; }
+          .labour-notice { padding:8px 14px !important; }
+        `;
+        doc.head.appendChild(st);
+        const sig = doc.createElement('div');
+        sig.style.cssText = 'display:flex;justify-content:flex-end;margin-top:34px;padding-right:10px;';
+        sig.innerHTML = '<div style="text-align:center;font-family:Arial,sans-serif;font-size:12px;font-weight:bold;"><div style="margin-bottom:34px;">For CHANAKYA CEMENT PRODUCTS</div><div style="border-top:1.5px solid #000;padding-top:4px;min-width:190px;">Authorised Signature</div></div>';
+        doc.getElementById('bill').appendChild(sig);
+        const fields = Array.from(doc.querySelectorAll('#bill input, #bill textarea'));
+        fields.forEach((el, i) => {
+          const o = origFields[i];
+          const d = doc.createElement('div');
+          d.className = el.className;
+          d.style.boxSizing = 'border-box';
+          d.style.fontSize = o.fs;
+          d.style.fontFamily = o.ff;
+          d.style.fontWeight = o.fw;
+          d.style.textAlign = o.ta;
+          d.style.background = 'transparent';
+          d.style.border = 'none';
+          d.style.resize = 'none';
+          d.style.minHeight = '0';
+          if (el.tagName === 'TEXTAREA') {
+            d.textContent = el.value;
+            d.style.whiteSpace = 'pre-wrap';
+            d.style.width = o.w + 'px';
+            d.style.padding = o.pad;
+            d.style.lineHeight = o.lh;
+            d.style.height = 'auto';
+            d.style.display = 'block';
+          } else {
+            const hasLine = el.classList.contains('date-inp') || el.classList.contains('extra-amt-inp') || el.classList.contains('c-inp');
+            d.textContent = el.value;
+            d.style.width = el.closest('td') ? '100%' : o.w + 'px';
+            d.style.height = o.h + 'px';
+            d.style.display = 'flex';
+            d.style.alignItems = 'center';
+            d.style.justifyContent = (o.ta === 'center') ? 'center' : 'flex-start';
+            d.style.whiteSpace = 'nowrap';
+            d.style.overflow = 'hidden';
+            d.style.padding = '0 ' + (parseFloat(o.pad.split(' ')[1]) || 2) + 'px';
+            d.style.lineHeight = '1';
+            if (hasLine) d.style.borderBottom = '1px solid #999';
+            d.style.flex = '0 1 auto'; d.style.minWidth = '0';
+          }
+          el.parentNode.replaceChild(d, el);
+        });
+      }
+    });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const mX = 10, mY = 5;
+    let w = pageW - mX * 2;
+    let h = canvas.height * w / canvas.width;
+    if (h > pageH - mY * 2) {          // fit on a single page
+      h = pageH - mY * 2;
+      w = canvas.width * h / canvas.height;
+    }
+    const x = (pageW - w) / 2;
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', x, mY, w, h);
+    const nm = (document.getElementById('cName').value || 'Bill').trim().replace(/[^\w\-]+/g, '_');
+    const dt = (document.getElementById('dateField').value || '').replace(/\//g, '-');
+    pdf.save('Chanakya_Quotation_' + nm + (dt ? '_' + dt : '') + '.pdf');
+  } catch (e) {
+    alert('PDF download nahi ho paya, print dialog khul raha hai.');
+    window.print();
+  } finally {
+    document.body.classList.remove('pdf-mode');
+    btn.textContent = oldTxt;
+    btn.disabled = false;
+  }
+}
+
+/* ── SAVE FORMAT ── Saves current provide-table content, notes & extra-col amount to localStorage ── */
+function saveFormat() {
+  const fmt = {
+    companyProvide : document.getElementById('companyProvide').value,
+    partyProvide   : document.getElementById('partyProvide').value,
+    extraColAmt    : document.getElementById('extraColAmt').value,
+    extraNotes     : document.getElementById('extraNotes').value,
+    noteText       : document.getElementById('noteText').value,
+    gstEnabled     : document.getElementById('gstToggle').checked
+  };
+  try {
+    localStorage.setItem('ccp_saved_format', JSON.stringify(fmt));
+    alert('✅ Format saved! Agli baar open karne par yahi format aayega.');
+  } catch(e) {
+    alert('❌ Format save nahi hua. Browser storage off ho sakta hai.');
+  }
+}
+
+/* ── LOAD SAVED FORMAT on page load ── */
+(function(){
+  try {
+    const raw = localStorage.getItem('ccp_saved_format');
+    if (!raw) return;
+    const fmt = JSON.parse(raw);
+    if (fmt.companyProvide !== undefined) document.getElementById('companyProvide').value = fmt.companyProvide;
+    if (fmt.partyProvide   !== undefined) document.getElementById('partyProvide').value   = fmt.partyProvide;
+    if (fmt.extraColAmt    !== undefined) document.getElementById('extraColAmt').value    = fmt.extraColAmt;
+    if (fmt.extraNotes     !== undefined) document.getElementById('extraNotes').value     = fmt.extraNotes;
+    if (fmt.noteText       !== undefined) document.getElementById('noteText').value       = fmt.noteText;
+    if (fmt.gstEnabled     !== undefined) {
+      document.getElementById('gstToggle').checked = fmt.gstEnabled;
+    }
+  } catch(e) {}
+})();
+
+/* ── Auto-adjust Textareas ── */
+function adjustTextAreaHeight(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+function adjustAllTextareas() {
+  document.querySelectorAll('.prov-textarea, .note-textarea').forEach(ta => {
+    adjustTextAreaHeight(ta);
+  });
+}
+document.querySelectorAll('.prov-textarea, .note-textarea').forEach(ta => {
+  ta.addEventListener('input', () => adjustTextAreaHeight(ta));
+});
+// Run on page load
+adjustAllTextareas();
+</script>
+
+</body>
+</html>
